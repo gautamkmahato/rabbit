@@ -4,7 +4,7 @@
 import { GoogleGenAI } from "@google/genai";
 
 const ai = new GoogleGenAI({
-    apiKey: "AIzaSyCut6BNPB5J0C6dU17EOxwRWxmq2DUUOSU"
+    apiKey: "AIzaSyAixwGhiW4U6hJ1Wi-Zs0G2lBXiPzGrqn4"
 });
 
 

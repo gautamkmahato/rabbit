@@ -18,7 +18,7 @@ export default function Dashboard() {
         const res = await fetch("/api/auth/github/repository");
         const data = await res.json();
         console.log(data)
-        setRepos(data);
+        setRepos(data); 
         console.log(data[0]?.owner?.login)
         setUsername(data[0]?.owner?.login);
       } catch (err) {

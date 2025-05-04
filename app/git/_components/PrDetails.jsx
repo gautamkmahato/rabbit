@@ -6,7 +6,8 @@ import PrDescription from "./PrDescription"
 import PrHeader from "./PrHeader"
 import CommentsFeed from "./CommentsFeed"
 import DiffViewer from "./DiffViewer"
-// import AiReview from "./AiReview"
+import AiReview from "./AiReview"
+import Ai from "./AiComponent"
 
 
 
@@ -52,9 +53,10 @@ export default function PrDetailPage({ prData, repo }) {
           <DiffViewer files={prData.changedFiles} viewMode={diffViewMode} />
         </TabsContent>
 
-        {/* <TabsContent value="ai-review" className="mt-4 ">
-          <AiReview reviewData={prData.aiReview} />
-        </TabsContent> */}
+        <TabsContent value="ai-review" className="mt-4 ">
+          {/* <AiReview reviewData={prData.aiReview} /> */}
+          <Ai files={prData.changedFiles} />
+        </TabsContent>
       </Tabs>
     </div>
   )

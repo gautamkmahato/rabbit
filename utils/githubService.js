@@ -81,3 +81,23 @@ export async function getPullRequestByNumber(owner, repo, pull_number) {
 
   return pr;
 }
+
+// githubService.ts
+
+export async function getCommitDetails(owner, repo, sha) {
+  const token = await getGithubTokenFromRequest();
+  const res = await fetch(`https://api.github.com/repos/${owner}/${repo}/commits/${sha}`, {
+    headers: {
+      Accept: "application/vnd.github+json",
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!res.ok) {
+    throw new Error(`Failed to fetch commit details: ${res.statusText}`);
+  }
+
+  const data = await res.json();
+  return data;
+}
+

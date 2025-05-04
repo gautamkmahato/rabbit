@@ -1,7 +1,13 @@
 // githubService.ts
 
-import { getPullRequestByNumber, getCommitsForPR, getChangedFilesForPR, getCommentsForPR, getLinkedIssues, } from "./githubService";
-
+import {
+  getPullRequestByNumber,
+  getCommitsForPR,
+  getChangedFilesForPR,
+  getCommentsForPR,
+  getLinkedIssues,
+  getCommitDetails, // New function to fetch commit details
+} from "./githubService";
 
 /**
  * Get detailed data for a single PR by number
@@ -13,24 +19,46 @@ export default async function getDetailedPullRequest(owner, repo, prNumber) {
     getCommitsForPR(owner, repo, pr.number),
     getChangedFilesForPR(owner, repo, pr.number),
     getCommentsForPR(owner, repo, pr.number),
-    getLinkedIssues(pr.body || ''),
+    getLinkedIssues(pr.body || ""),
   ]);
 
   // === AI Review Status Logic ===
   const isMerged = pr.merged_at !== null;
   const labels = pr.labels?.map((label) => label.name.toLowerCase()) || [];
 
-  const reviewApprovedByLabel = labels.some(label =>
-    ['reviewed', 'approved', 'lgtm'].includes(label)
+  const reviewApprovedByLabel = labels.some((label) =>
+    ["reviewed", "approved", "lgtm"].includes(label)
   );
 
-  const reviewApprovedByComments = comments.some(c =>
+  const reviewApprovedByComments = comments.some((c) =>
     /lgtm|looks good|approved/i.test(c.body)
   );
 
   let aiReviewStatus;
   if (isMerged || reviewApprovedByLabel || reviewApprovedByComments) {
-    aiReviewStatus = 'approved';
+    aiReviewStatus = "approved";
+  }
+
+  // === Build a map of files to their commit metadata ===
+  const fileMetadataMap = {};
+
+  for (const commit of commits) {
+    const commitDetails = await getCommitDetails(owner, repo, commit.sha);
+    const { sha, commit: commitData, author, files: commitFiles } = commitDetails;
+
+    if (!commitFiles) continue;
+
+    for (const file of commitFiles) {
+      const key = file.filename;
+      if (!fileMetadataMap[key]) {
+        fileMetadataMap[key] = {
+          commit_id: sha,
+          comments_url: commitDetails.comments_url || "",
+          author_of_the_commit: commitData?.author?.name || author?.login || "",
+          message: commitData?.message || "",
+        };
+      }
+    }
   }
 
   return {
@@ -51,7 +79,7 @@ export default async function getDetailedPullRequest(owner, repo, prNumber) {
     number_of_additions: pr.additions,
     number_of_deletions: pr.deletions,
     labels,
-    mentions: (pr.body?.match(/@\w+/g) || []).map((m) => m.replace('@', '')),
+    mentions: (pr.body?.match(/@\w+/g) || []).map((m) => m.replace("@", "")),
     linked_issues: linkedIssues,
     comments: comments.map((c) => ({
       user: c.user?.login,
@@ -61,14 +89,21 @@ export default async function getDetailedPullRequest(owner, repo, prNumber) {
       position: c.position,
       body: c.body,
     })),
-    changedFiles: files.map((file) => ({
-      filename: file.filename,
-      status: file.status,
-      additions: file.additions,
-      deletions: file.deletions,
-      changes: file.changes,
-      patch: file.patch,
-    })),
+    changedFiles: files.map((file) => {
+      const meta = fileMetadataMap[file.filename] || {};
+      return {
+        filename: file.filename,
+        status: file.status,
+        additions: file.additions,
+        deletions: file.deletions,
+        changes: file.changes,
+        patch: file.patch,
+        comments_url: meta.comments_url || "",
+        author_of_the_commit: meta.author_of_the_commit || "",
+        message: meta.message || "",
+        commit_id: meta.commit_id || "",
+      };
+    }),
     assignees: pr.assignees?.map((a) => ({
       login: a.login,
       avatar_url: a.avatar_url,
@@ -80,4 +115,3 @@ export default async function getDetailedPullRequest(owner, repo, prNumber) {
     mergeable_state: pr.mergeable_state,
   };
 }
-

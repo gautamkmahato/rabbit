@@ -7,7 +7,7 @@ import MarkdownPreview from '@uiw/react-markdown-preview';
 
 export default function Page() {
   const owner = 'gautamkmahato';
-  const repo = 'Portfolio';
+  const repo = 'rag-projects';
   const pull_number = 2;
 
   const [loadingDiffs, setLoadingDiffs] = useState(false);

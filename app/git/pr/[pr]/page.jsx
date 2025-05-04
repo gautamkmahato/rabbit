@@ -7,7 +7,7 @@ export default async function PullRequestPage({ params }) {
 
   // In a real app, you would fetch this data from GitHub API
   // For demo purposes, we'll use mock data
-  const prData = await getPullRequestData(owner, repo, pullNumber)
+  const prData = await getPullRequestData("gautamkmahato", "rag-projects", 2)
 
   return(
     <>

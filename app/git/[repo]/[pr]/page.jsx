@@ -41,7 +41,6 @@ export default function PullRequestPage({ params }) {
 
   return (
     <div className="px-12">
-      <h1>PR Page</h1>
       <PrDetailPage prData={prData} repo={repo} />
     </div>
   );

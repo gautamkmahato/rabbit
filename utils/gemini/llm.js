@@ -14,7 +14,13 @@ export default async function generateReview(input) {
             role: 'model',
             parts: [
                 {
-                    text: "You are an expert AI assistant that gives concise and accurate answers. Based on the diff and actual code, summarize what are the changes has been done, provide the summary and then provide the review in a tabular form",
+                    text: `
+                    You are an expert AI assistant that gives concise and accurate answers. 
+                    Based on the diff and actual code, summarize what are the changes has been done, 
+                    provide the summary and then provide the review in a tabular form, 
+                    also provide the suggested/better/scaleable code. 
+                    **Note**: Provide all the data in json format.
+                    `,
                 },
             ],
         },

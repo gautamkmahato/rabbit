@@ -1,106 +1,131 @@
-'use client';
+'use client'
 
 import generateSummary from '@/utils/gemini/generateSummary';
 import generateReview from '@/utils/gemini/llm';
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState } from 'react'
+import MarkdownViewer from './aiReview/MarkdownViewer';
 import Tabs from '@/app/components/Tabs';
-import React from 'react';
 
-function AiComponent({ files }) {
+
+export default function Ai({ files }) {
+
+
+  const [loading, setLoading] = useState(false);
   const [loadingReviews, setLoadingReviews] = useState(false);
   const [reviews, setReviews] = useState([]);
-  const [reviewSummary, setReviewSummary] = useState('');
+  const [error, setError] = useState(''); // ✅ new error state
+  const [reviewSummary, setReviewSummary] = useState(''); // ✅ new error state
 
-  const getAllReviews = useCallback(async (reviews) => {
-    try {
-      if (!reviews || reviews.length === 0) {
-        console.warn('No reviews found for summary generation.');
-        return;
-      }
 
-      const fullReview = reviews.map((review, i) => ({
-        id: i,
-        title: `Review ${i + 1}`,
-        content: review.aiReview,
-      }));
-
-      const jsonString = JSON.stringify(fullReview);
-      const result = await generateSummary(jsonString);
-      setReviewSummary(result);
-    } catch (error) {
-      console.error('❌ Error generating summary from reviews:', error);
-      alert('An error occurred while generating the review summary.');
-    }
-  }, []);
-
-  const getReviews = useCallback(async () => {
-    if (!files || files.length === 0) {
-      alert('Please load commit diffs first.');
-      return;
-    }
-
-    setLoadingReviews(true);
-    const allReviews = [];
-
-    try {
-      for (let i = 0; i < files.length; i++) {
-        const file = files[i];
-        const patch = file?.patch;
-
-        if (!patch) {
-          console.warn(`⚠️ No patch found for file "${file.filename}", skipping...`);
-          allReviews.push({
-            filename: file.filename,
-            aiReview: '⚠️ No patch found. Skipped review.',
-          });
-          continue;
-        }
-
-        try {
-          const result = await generateReview(patch);
-          allReviews.push({
-            filename: file.filename,
-            changes: file.changes,
-            additions: file.additions,
-            deletions: file.deletions,
-            status: file.status,
-            aiReview: result || '⚠️ Empty review returned.',
-          });
-        } catch (error) {
-          console.error(`❌ Error generating review for file "${file.filename}":`, error);
-          allReviews.push({
-            filename: file.filename,
-            aiReview: '❌ Error generating review.',
-          });
-        }
-      }
-
-      setReviews(allReviews);
-      await getAllReviews(allReviews);
-    } catch (e) {
-      console.error('Unexpected error during review generation:', e);
-      alert('An error occurred while generating reviews.');
-    } finally {
-      setLoadingReviews(false);
-    }
-  }, [files, getAllReviews]);
 
   useEffect(() => {
+    const getReviews = async () => {
+      if (files.length === 0) return;
+  
+      const allReviews = [];
+  
+      try {
+        setLoadingReviews(true);
+  
+        for (const file of files) {
+          const patch = file?.patch;
+  
+          if (!patch) {
+            allReviews.push({
+              filename: file.filename,
+              aiReview: '⚠️ No patch found. Skipped review.',
+            });
+            continue;
+          }
+  
+          try {
+            const result = await generateReview(patch);
+            allReviews.push({
+              filename: file.filename,
+              changes: file.changes,
+              additions: file.additions,
+              deletions: file.deletions,
+              status: file.status,
+              aiReview: result || '⚠️ Empty review returned.',
+            });
+          } catch (error) {
+            allReviews.push({
+              filename: file.filename,
+              aiReview: '❌ Error generating review.',
+            });
+          }
+        }
+  
+        // Just update the state; summary generation is handled in another useEffect
+        setReviews(allReviews);
+      } catch (e) {
+        console.error("Unexpected error during review generation:", e);
+      } finally {
+        setLoadingReviews(false);
+      }
+    };
+  
     getReviews();
-  }, [getReviews]);
+  }, [files]);
+
+  
+  // Only run this when reviews are fully updated
+  useEffect(() => {
+    const getAllReviews = async () => {
+      try {
+        setLoading(true);
+        if (!reviews || reviews.length === 0) return;
+
+        const fullReview = reviews.map((review, i) => ({
+          title: `Review ${i + 1}`,
+          content: review.aiReview,
+        }));
+
+        const jsonString = JSON.stringify(fullReview);
+        const result = await generateSummary(jsonString);
+        console.log("****************** Get All reviews ********************");
+        setReviewSummary(result);
+      } catch (error) {
+        console.error("❌ Error generating summary from reviews:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (reviews.length > 0) getAllReviews();
+  }, [reviews]);
+
+    
+
+  if(loadingReviews){
+    return(
+      <>
+        <div className='flex justify-center items-center text-center'>
+          <h1>Loading Reviews...</h1>
+        </div>
+      </>
+    )
+  }
+
+  if(loading){
+    return(
+      <>
+        <div className='flex justify-center items-center text-center'>
+          <h1>Generating Summary...</h1>
+        </div>
+      </>
+    )
+  }
 
   return (
     <>
-      <h1>AI Review</h1>
-      <div>
+      {/* <MarkdownViewer markdownText={reviewSummary}/> */}
+      <div className="">
         <Tabs files={files} reviews={reviews} finalReview={reviewSummary} />
       </div>
+
     </>
-  );
+  )
+
 }
 
-const Ai = React.memo(AiComponent, (prevProps, nextProps) => {
-  return JSON.stringify(prevProps.files) === JSON.stringify(nextProps.files);
-});
-
-export default Ai;

@@ -1,7 +1,7 @@
 import { GoogleGenAI } from "@google/genai";
 
 const ai = new GoogleGenAI({
-    apiKey: "AIzaSyAixwGhiW4U6hJ1Wi-Zs0G2lBXiPzGrqn4"
+    apiKey: ""
 });
 
 
